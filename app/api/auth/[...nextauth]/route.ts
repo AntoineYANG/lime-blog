@@ -6,7 +6,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import type { IUser } from "@models/user";
 
 
-export const authOptions: AuthOptions = {
+const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
@@ -82,6 +82,6 @@ export const authOptions: AuthOptions = {
   },
 };
 
-export const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
