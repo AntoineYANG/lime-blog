@@ -17,7 +17,7 @@ import type { IUser } from "@models/user";
 //   )
 // `);
 
-const DB_DIR = path.resolve(path.dirname(import.meta.url.replace(/^file:\/\/\//, '')), "..", "database");
+const DB_DIR = path.resolve(process.cwd(), "database");
 
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR);
