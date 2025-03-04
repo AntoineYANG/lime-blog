@@ -19,6 +19,10 @@ import type { IUser } from "@models/user";
 
 const DB_DIR = path.resolve(path.dirname(import.meta.url.replace(/^file:\/\/\//, '')), "..", "database");
 
+if (!fs.existsSync(DB_DIR)) {
+  fs.mkdirSync(DB_DIR);
+}
+
 const USER_TABLE_JSON = path.join(DB_DIR, "users.json");
 if (!fs.existsSync(USER_TABLE_JSON)) {
   // fs.writeFileSync(USER_TABLE_CSV, `id,email,password\n${nanoid()},${process.env.OWNER_USER_EMAIL},${process.env.OWNER_USER_PASSWORD}`, 'utf8');
