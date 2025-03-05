@@ -1,10 +1,10 @@
 "use client";
 
 import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 import type { FC } from "react";
 
 import { withSession } from "./with-session";
-import Link from "next/link";
 
 
 const Navbar: FC = () => {
@@ -27,7 +27,7 @@ const Navbar: FC = () => {
             </div>
           )}
           {!(session?.user) && (
-            <Link href="/login">sign in</Link>
+            <Link href="/signin">sign in</Link>
           )}
         </div>
       </header>

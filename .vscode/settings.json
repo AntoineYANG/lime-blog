@@ -1,7 +1,9 @@
 {
   "cSpell.words": [
     "AUTOINCREMENT",
-    "duckdb",
-    "NEXTAUTH"
+    "dizzle",
+    "libsql",
+    "NEXTAUTH",
+    "unixepoch"
   ]
 }
