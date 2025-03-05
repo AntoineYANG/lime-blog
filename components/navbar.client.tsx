@@ -7,6 +7,8 @@ import type { FC } from "react";
 import { withSession } from "./with-session";
 
 
+const Separator: FC = () => <span className="select-none inline-block mx-1">|</span>;
+
 const Navbar: FC = () => {
   const { data: session } = useSession();
   return (
@@ -16,13 +18,21 @@ const Navbar: FC = () => {
           <Link href="/">
             home
           </Link>
+          <Separator />
+          <Link href="/posts">
+            posts
+          </Link>
+          <Separator />
+          <Link href="/new">
+            new
+          </Link>
         </div>
         <div className="flex-1"></div>
         <div className="flex-none">
           {session?.user && (
             <div>
               <span>{session.user.email}</span>
-              <span className="select-none inline-block mx-1">|</span>
+              <Separator />
               <button className="cursor-pointer" onClick={() => signOut()}>sign out</button>
             </div>
           )}

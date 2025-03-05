@@ -1,12 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export enum ErrorCode {
+  // auth
+  LOGGED_OUT = 1001,
   // signin
-  WRONG_USR_NAME_OR_PWD = 101,
+  WRONG_USR_NAME_OR_PWD = 2001,
+  BAD_USR_STATUS = 2002,
+  // api endpoint
+  BAD_PAYLOAD = 3001,
 }
 
 abstract class ErrorMessage {
-  readonly code: number;
+  readonly code: ErrorCode;
   readonly label: string;
   readonly details?: any;
 
@@ -19,10 +24,33 @@ abstract class ErrorMessage {
   }
 }
 
+export class LoggedOutErrorMessage extends ErrorMessage {
+  override readonly details?: void;
+  constructor() {
+    super(ErrorCode.LOGGED_OUT, "LOGGED_OUT");
+  }
+}
+
 export class WrongUsrNameOrPwdErrorMessage extends ErrorMessage {
   override readonly details?: void;
   constructor() {
     super(ErrorCode.WRONG_USR_NAME_OR_PWD, "WRONG_USR_NAME_OR_PWD");
+  }
+}
+
+export class BadUsrStatusErrorMessage extends ErrorMessage {
+  override readonly details?: string;
+  constructor(details: string) {
+    super(ErrorCode.BAD_USR_STATUS, "BAD_USR_STATUS");
+    this.details = details;
+  }
+}
+
+export class BadPayloadErrorMessage extends ErrorMessage {
+  override readonly details?: string;
+  constructor(details: string) {
+    super(ErrorCode.BAD_PAYLOAD, "BAD_PAYLOAD");
+    this.details = details;
   }
 }
 

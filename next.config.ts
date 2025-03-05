@@ -1,8 +1,13 @@
 import type { NextConfig } from "next";
+import NextMDX from "@next/mdx";
 
+
+const withMDX = NextMDX({
+  extension: /\.mdx?$/,
+});
 
 const nextConfig: NextConfig = {
-  /** @type {import('next').NextConfig} */
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
   // webpack: (config, { isServer }) => {
   //   if (!isServer) {
   //     config.externals.push("duckdb");
@@ -15,4 +20,4 @@ const nextConfig: NextConfig = {
 };
 
 
-export default nextConfig;
+export default withMDX(nextConfig);

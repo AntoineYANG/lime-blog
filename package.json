@@ -9,18 +9,26 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@libsql/client": "^0.14.0",
+    "@mdx-js/loader": "^3.1.0",
+    "@next/mdx": "^15.2.1",
+    "@vercel/analytics": "^1.5.0",
     "bcrypt": "^5.1.1",
     "cookies": "^0.9.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.0",
     "fast-csv": "^5.0.2",
     "fs-extra": "^11.3.0",
+    "gray-matter": "^4.0.3",
+    "mdx": "^0.3.1",
     "nanoid": "^5.1.2",
     "next": "15.2.1",
     "next-auth": "^4.24.11",
+    "next-mdx-remote": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-wrap-balancer": "^1.1.1",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {

@@ -1,3 +1,8 @@
+import type { Session } from "next-auth";
+
+import type { IUser } from "@models/user";
+
+
 declare global {
 
   namespace NodeJS {
@@ -18,6 +23,12 @@ declare global {
   } | {
     success: false;
     reason: string;
+    detail?: string;
+  };
+
+  type AppSession = Session & {
+    accessToken?: unknown;
+    appUser?: IUser | undefined | null;
   };
 
 }

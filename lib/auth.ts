@@ -1,12 +1,12 @@
 import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 // import GithubProvider from "next-auth/providers/github";
 
-import { db, sqlite } from "@lib/dizzle";
+import { db, sqlite } from "@/lib/drizzle";
 import { LOCAL_LOGIN_ID } from "./constants";
-import { raiseErrorMessage, WrongUsrNameOrPwdErrorMessage } from "./errors";
+import { BadUsrStatusErrorMessage, raiseErrorMessage, WrongUsrNameOrPwdErrorMessage } from "./errors";
+import userActions from "./actions/users";
 
 
 const authOptions: AuthOptions = {
@@ -26,12 +26,18 @@ const authOptions: AuthOptions = {
         if (!credentials) {
           throw new Error("Authorization failed: invalid credential.");
         }
-        await sqlite.users.init();
+        await sqlite.users.init(db);
         const user = await db.query.users.findFirst({
-          where: u => eq(u.email, credentials.email),
+          where: (u, op) => op.and(
+            op.isNull(u.deleted_at),
+            op.eq(u.email, credentials.email),
+          ),
         });
         if (!user) {
           throw raiseErrorMessage(new WrongUsrNameOrPwdErrorMessage());
+        }
+        if (user.deleted_at) {
+          throw raiseErrorMessage(new BadUsrStatusErrorMessage('User has been deleted.'));
         }
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) {
@@ -59,9 +65,20 @@ const authOptions: AuthOptions = {
       }
       return token;
     },
-    async session({ session, token, user: _user }) {
-      // @ts-expect-error appended entry
+    async session({ session: _session, token }) {
+      const session = _session as AppSession;
       session.accessToken = token.accessToken;
+      const username = session.user?.name;
+      if (username) {
+        try {
+          const user = await userActions.getUser({ name: username });
+          if (user.success) {
+            session.appUser = user.data;
+          }
+        } catch (error) {
+          console.error("Error occurred in session callback", error);
+        }
+      }
       return session;
     }
   },

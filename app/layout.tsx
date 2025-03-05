@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
+import { font } from "@cp/theme";
 import Navbar from "@cp/navbar.client";
 
 import "./globals.css";
 
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "LimeBlog",
@@ -29,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-style-none">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased w-screen min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-scroll bg-background text-foreground scroll-style-none`}
+        className={`${font.kleeOne.className} antialiased w-screen min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-scroll bg-background text-foreground scroll-style-none`}
       >
         <Navbar />
         <div className="relative w-full h-full mt-16 mb-0 overflow-hidden py-0">
@@ -38,8 +29,8 @@ export default function RootLayout({
           </div>
           {/* <Footer /> */}
         </div>
-        {/* <BackToTopButton />
-        <Analytics /> */}
+        {/* <BackToTopButton /> */}
+        <Analytics />
       </body>
     </html>
   );
