@@ -1,8 +1,13 @@
 {
   "cSpell.words": [
     "AUTOINCREMENT",
-    "libsql",
+    "neondatabase",
     "NEXTAUTH",
-    "unixepoch"
+    "PGDATABASE",
+    "PGHOST",
+    "PGPASSWORD",
+    "PGUSER",
+    "unixepoch",
+    "UNPOOLED"
   ]
 }

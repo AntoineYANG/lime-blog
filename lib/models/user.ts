@@ -1,12 +1,8 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, pgTable, text } from "drizzle-orm/pg-core";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
+import { UserRoleFlag } from "@lib/types";
 
-export enum UserRoleFlag {
-  Common = 0,
-  Admin = 1,
-  SuperAdmin = 2,
-}
 
 declare global {
   namespace Data {
@@ -23,14 +19,14 @@ declare global {
   }
 }
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
-  role: integer("role").notNull().default(UserRoleFlag.Common),
+  role: integer("role").default(UserRoleFlag.Common).notNull(),
   username: text("username").unique().notNull(),
-  email: text("email").unique().notNull().default(""),
+  email: text("email").default("").notNull(),
   password: text("password").notNull(), // hashed
-  avatar: text("avatar").notNull().default(""),
-  created_at: integer("created_at").notNull().default(Math.floor(Date.now() / 1_000)), // Unix stamp
+  avatar: text("avatar").default("").notNull(),
+  created_at: integer("created_at").default(Math.floor(Date.now() / 1_000)).notNull(), // Unix stamp
   deleted_at: integer("deleted_at"),
 });
 

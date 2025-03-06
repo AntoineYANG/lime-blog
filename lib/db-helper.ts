@@ -1,15 +1,19 @@
 import bcrypt from "bcrypt";
-import type { SQLiteTableWithColumns, TableConfig } from "drizzle-orm/sqlite-core";
+import type { PgTableWithColumns, TableConfig } from "drizzle-orm/pg-core";
 
 
 export const resolveSQLFromSchema = <T extends TableConfig>(
-  schema: SQLiteTableWithColumns<T>,
+  schema: PgTableWithColumns<T>,
   replacer?: { [key in keyof T['columns']]?: string | ((column: T['columns'][string]) => string) }
 ): string => {
   const allKeysText: string[] = [];
   for (const key of Object.keys(schema)) {
     const col = schema[key];
-    let t = `${col.name} ${col.getSQLType().toUpperCase()}`;
+    if (typeof col !== 'object') {
+      continue;
+    }
+    console.log([typeof col, col]);
+    let t = `${col.name} ${col.columnType.replace(/^Pg/, '').toUpperCase()}`;
     const rep = replacer?.[key];
     if (rep) {
       t += ` ${typeof rep === 'string' ? rep : rep(col)}`.replace(/^  /, '');

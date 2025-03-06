@@ -21,8 +21,9 @@
     "paths": {
       "@/*": ["./*"],
       "@api/*": ["./app/api/*"],
-      "@models/*": ["./models/*"],
       "@lib/*": ["./lib/*"],
+      "@models/*": ["./lib/models/*"],
+      "@actions/*": ["./lib/actions/*"],
       "@cp/*": ["./components/*"],
       "@utils/*": ["./utils/*"]
     }
