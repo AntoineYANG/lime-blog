@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 // import GithubProvider from "next-auth/providers/github";
 
 import { db } from "@lib/drizzle";
+import { ensureUserTable } from "@models/user";
 import { LOCAL_LOGIN_ID } from "./constants";
 import { BadUsrStatusErrorMessage, raiseErrorMessage, WrongUsrNameOrPwdErrorMessage } from "./errors";
 
@@ -25,6 +26,7 @@ const authOptions: AuthOptions = {
         if (!credentials) {
           throw new Error("Authorization failed: invalid credential.");
         }
+        await ensureUserTable(db);
         const user = await db.query.users.findFirst({
           where: (u, op) => op.and(
             op.isNull(u.deletedAt),
