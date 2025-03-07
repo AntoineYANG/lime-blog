@@ -32,6 +32,8 @@ const newPost = subscribeRequestHandler({
     const blob = new Blob([content], { type: "text/plain" });
     const file = new File([blob], id, { type: "text/plain" });
 
+    let url: string;
+
     if (target === "local") {
       const fs = await import("fs-extra");
       await fs.ensureDir(LOCAL_OBJECT_STORAGE_PATH);
@@ -39,14 +41,17 @@ const newPost = subscribeRequestHandler({
       const filepath = path.join(LOCAL_OBJECT_STORAGE_PATH, id);
       const buffer = await file.arrayBuffer();
       await fs.writeFile(filepath, Buffer.from(buffer));
+      url = `/${[LOCAL_OBJECT_STORAGE_PATH.split(/(\/|\\)/g).at(-1), id].join("/")}`;
     } else {
-      await put(file.name, file, { access: "public" });
+      const blob = await put(file.name, file, { access: "public" });
+      url = blob.url;
     }
 
     await ensurePostTable(db);
 
     await db.insert(posts).values({
       id,
+      url,
       authorId: user.id,
       title,
       createdAt: timestamp,

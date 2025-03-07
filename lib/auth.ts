@@ -1,12 +1,11 @@
 import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 // import GithubProvider from "next-auth/providers/github";
 
 import { db } from "@lib/drizzle";
 import { LOCAL_LOGIN_ID } from "./constants";
 import { BadUsrStatusErrorMessage, raiseErrorMessage, WrongUsrNameOrPwdErrorMessage } from "./errors";
-import User from "./actions/user";
 
 
 const authOptions: AuthOptions = {
@@ -70,7 +69,8 @@ const authOptions: AuthOptions = {
       const username = session.user?.name;
       if (username) {
         try {
-          const res = await User.findUser({ name: username });
+          const { default: User } = await import("@actions/user");
+          const res = await User.findUser.call({ name: username });
           if (res.success && res.data) {
             const { id, name, role } = res.data;
             session.appUser = {

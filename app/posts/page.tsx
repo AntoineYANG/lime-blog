@@ -1,20 +1,19 @@
 import type { FC } from "react";
 
-import type { IListPostPayload, IListPostQuery } from "@lib/actions/posts";
-import postActions, { resolveListPostPayload, unitedListPostPayload } from "@lib/actions/posts";
+import type { ListPostSearchParams } from "@actions/post";
+import Post from "@actions/post";
 
 import SearchResultBody from "./body";
 
 
 export const dynamic = 'force-dynamic';
 
-const SearchResultPage: FC<{ searchParams: Promise<{ [key in keyof IListPostPayload]?: string | undefined }> }> = async ({ searchParams }) => {
-  const query = await searchParams;
-  const payload: IListPostQuery = resolveListPostPayload(query);
-  const data = await postActions.fetchPostList(payload);
+const SearchResultPage: FC<{ searchParams: Promise<{ [key in keyof ListPostSearchParams]?: string | undefined }> }> = async ({ searchParams }) => {
+  const query = await searchParams as ListPostSearchParams;
+  const data = await Post.listPost.call({});
   
   return (
-    <SearchResultBody initPayload={unitedListPostPayload(payload)} initResult={data} />
+    <SearchResultBody initSearch={query} initResult={data} />
   );
 };
 

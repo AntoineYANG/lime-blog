@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type FC } from "react";
 
-import type { IListPostPayload, IListPostResult } from "@lib/actions/posts";
+import type { ListPostSearchParams, ListPostResult } from "@actions/post";
 import { OrderDirection } from "@lib/constants";
-import postActions from "@lib/actions/posts";
 import Pagination from "@cp/pagination.client";
 import PostList from "@cp/post-list";
 
@@ -12,15 +11,15 @@ import PostList from "@cp/post-list";
 // TODO: i18n
 
 export interface IPostListProps {
-  initResult?: IResult<IListPostResult>;
-  initQuery?: IListPostPayload;
-  onChange?: (value: { query: IListPostPayload; result: IResult<IListPostResult> }) => void;
+  initResult?: IResult<ListPostResult>;
+  initQuery?: ListPostSearchParams;
+  onChange?: (value: { query: ListPostSearchParams; result: IResult<ListPostResult> }) => void;
 }
 
 const PostSearchView: FC<IPostListProps> = ({ initResult: initResult, initQuery: initQuery, onChange }) => {
   const initPropsRef = useRef(initQuery && initResult ? { query: initQuery, result: initResult } : null); // refers to the first props
   
-  const [query, setQuery] = useState<Required<Pick<IListPostPayload, "pi" | "ob" | "od">>>({
+  const [query, setQuery] = useState<Required<Pick<ListPostSearchParams, "pi" | "ob" | "od">>>({
     // aid: initPropsRef.current?.query.aid ?? "",
     // ut: initPropsRef.current?.query.ut ?? "0~",
     // ps: initPropsRef.current?.query.ps ?? 20,
@@ -31,7 +30,7 @@ const PostSearchView: FC<IPostListProps> = ({ initResult: initResult, initQuery:
 
   const [busy, setBusy] = useState(false);
 
-  const [result, setResult] = useState<IResult<IListPostResult> | null>(initPropsRef.current?.result ?? null);
+  const [result, setResult] = useState<IResult<ListPostResult> | null>(initPropsRef.current?.result ?? null);
 
   const total = result?.success ? result.data.count : 0;
 
@@ -52,7 +51,15 @@ const PostSearchView: FC<IPostListProps> = ({ initResult: initResult, initQuery:
       return;
     }
     setBusy(true);
-    const res = await postActions.fetchPostList(q, window.location.toString());
+    const url = new URL("/api/post/all", window.location.href);
+    const sp = url.searchParams;
+    for (const [k, v] of Object.entries(q)) {
+      if (v) {
+        sp.set(k, `${v}`);
+      }
+    }
+    const r = await fetch(url, { method: "get" });
+    const res = await r.json();
     setQuery(q);
     setResult(res);
     releaseTimerRef.current = setTimeout(() => {

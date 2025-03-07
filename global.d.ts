@@ -57,7 +57,9 @@ declare global {
   };
 
   type WithKeysMapped<T extends object, M extends Partial<{ [key in keyof T]: Exclude<string, keyof T> }>> = {
-    [key in M[keyof M]]: T[keyof PickByValue<M, key>];
+    [key in M[keyof M] as (T[keyof PickByValue<M, key>] | undefined) extends T[keyof PickByValue<M, key>] ? never : key]: T[keyof PickByValue<M, key>];
+  } & {
+    [key in M[keyof M] as (T[keyof PickByValue<M, key>] | undefined) extends T[keyof PickByValue<M, key>] ? key : never]?: T[keyof PickByValue<M, key>];
   } & {
     [key in keyof Omit<T, keyof M>]: T[key];
   };

@@ -1,6 +1,3 @@
-import { readFile, stat } from "fs/promises";
-import fs, { exists } from "fs-extra";
-import path from "path";
 import type { Metadata } from "next";
 import { type FC } from "react";
 import * as runtime from "react/jsx-runtime";
@@ -9,35 +6,24 @@ import matter from "gray-matter";
 import Balancer from "react-wrap-balancer";
 import { compile, run } from "@mdx-js/mdx";
 
-import postActions, { postDir } from "@lib/actions/posts";
+import Post from "@actions/post";
+import User from "@actions/user";
 import { font } from "@cp/theme";
 import { mdxComponents } from "@cp/mdx";
 
 
-fs.ensureDirSync(postDir);
-
-export async function generateStaticParams() {
-  try {
-    const posts = await postActions.fetchAllPostId();
-    if (!posts.success) {
-      return [];
-    }
-    return posts.data.items.map(id => ({
-      id: id,
-    }));
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-};
-
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const fn = path.join(postDir, `${id}.md`);
-  if (!await exists(fn)) {
+  // FIXME:
+  const list = await Post.listPost.call();
+  if (!list.success) {
     return {};
   }
-  const raw = await readFile(fn);
+  const which = list.data.items.find(w => w.id === id);
+  if (!which) {
+    return {};
+  }
+  const raw = which.preview;
   const { data } = matter(raw);
   
   return {
@@ -47,17 +33,20 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 const PostDetailPage: FC<{ params: Promise<{ id: string }> }> = async ({ params }) => {
   const { id } = await params;
-  const fn = path.join(postDir, `${id}.md`);
-  if (!await exists(fn)) {
-    return (
-      <div>
-        Not Found.
-      </div>
-    );
+  // FIXME:
+  const list = await Post.listPost.call();
+  if (!list.success) {
+    return <>Not Found</>;
   }
-  const raw = await readFile(fn);
+  const which = list.data.items.find(w => w.id === id);
+  if (!which) {
+    return <>Not Found</>;
+  }
+  const a = await User.findUser.call({ id: which.authorId });
+  const r = await fetch(new URL(which.url, process.env.DEPLOY_HOST));
+  const raw = await r.text();
   const { content, data } = matter(raw);
-  const { title = "No Title", tags = [], date = (await stat(fn)).mtime, author = 'anonymous' } = data;
+  const { tags = [] } = data;
   
   const code = String(
     await compile(content, { outputFormat: 'function-body' })
@@ -70,7 +59,7 @@ const PostDetailPage: FC<{ params: Promise<{ id: string }> }> = async ({ params 
   return (
     <article>
       <h1 className={`${font.kleeOne.className} text-4xl text-gray-950 xl:text-5xl leading-[1.5em] font-bold -mt-4 portrait:-mt-6 mb-10 portrait:mb-6 pb-6 border-b text-center`}>
-        <Balancer j={0.6}>{title}</Balancer>
+        <Balancer j={0.6}>{which.title}</Balancer>
       </h1>
       <div className="text-start space-x-2 mb-2 flex flex-wrap">
         {tags.map((tag: string, i: number) => (
@@ -82,14 +71,16 @@ const PostDetailPage: FC<{ params: Promise<{ id: string }> }> = async ({ params 
         ))}
       </div>
       <p className="text-gray-400 text-end">
-        <Link href={`/author/${encodeURIComponent(author)}`} className="hover:underline focus:underline hover:text-gray-700 focus:text-gray-700">
-          <span>
-            {author}
-          </span>
-        </Link>
+        {a.success && a.data?.name && (
+          <Link href={`/author/${encodeURIComponent(a.data.name)}`} className="hover:underline focus:underline hover:text-gray-700 focus:text-gray-700">
+            <span>
+              {a.data.name}
+            </span>
+          </Link>
+        )}
         &nbsp;-&nbsp;
         <span>
-          {new Date(date).toLocaleDateString()}
+          {new Date(which.updatedAt * 1_000).toLocaleDateString()}{which.updatedAt !== which.createdAt ? ' (edited)' : ''}
         </span>
       </p>
       <MDXContent components={mdxComponents} />

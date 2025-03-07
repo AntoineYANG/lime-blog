@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import type { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import type { PgTableWithColumns, TableConfig } from "drizzle-orm/pg-core";
 import { Column } from "drizzle-orm";
 
-import authOptions from "./auth";
 import { LoggedOutErrorMessage } from "./errors";
 import type { db as _db } from "./drizzle";
 
@@ -30,23 +29,23 @@ declare global {
     readonly requiresPayload: RequiresPayload;
     readonly requiresAuth: RequiresAuth;
     readonly enableFile: EnableFile;
-    (...args: RequestActionParameters<EnableFile, Payload>): RequestActionReturn<Result>;
   };
 
 }
 
 
 type InferRequiresPayload<C extends (ctx: any, payload?: any) => any> = C extends (ctx: any, payload: unknown) => Promise<unknown> ? false : true;
-type InferPayload<C extends (ctx: any, payload?: any) => any> = C extends (ctx: any, payload: infer P) => Promise<unknown> ? P : never;
+type Slice1<T extends Array<any>> = T extends [any, ...infer B] ? B : never;
+type InferPayload<C extends (ctx: any, payload?: any) => any> = Slice1<Parameters<C>>[0];
 type InferRespond<C extends (payload?: any) => any> = ReturnType<C>;
 
 type RequestActionParameters<
   EnableFile extends boolean,
   Payload extends Record<string, unknown> | unknown,
 > = EnableFile extends true ? (
-  unknown extends Payload ? [file: File | null] : [file: File | null, payload: Payload]
+  unknown extends Payload ? [file: File | null] : {} extends Payload ? [file: File | null, payload?: Payload] : [file: File | null, payload: Payload]
 ) : (
-  unknown extends Payload ? [] : [payload: Payload]
+  unknown extends Payload ? [] : {} extends Payload ? [payload?: Payload] : [payload: Payload]
 );
 
 type RequestActionReturn<Result> = Promise<IResult<Awaited<Result>>>;
@@ -136,22 +135,24 @@ export const subscribeRequestHandler = (<
 >(config: RequestHandlerConfig<Method, Endpoint, HandlerName, RequiresAuth, EnableFile, Context, Executor>) => {
   const { method, endpoint, name, requiresAuth = false, enableFile = false, execute, onError } = config;
   const requiresPayload = execute.length === 2;
-  const call = async (...args: [Parameters<Executor>[1], Parameters<Executor>[2]]): Promise<IResult<Awaited<ReturnType<Executor>>>> => {
+  const call = async (...args: Slice1<Parameters<Executor>>): Promise<IResult<Awaited<ReturnType<Executor>>>> => {
     try {
       const ctx = {} as Context;
       if (enableFile) {
         // @ts-expect-error checked
         ctx.file = args[0] ?? null;
       }
+      // @ts-expect-error checked
       const payload = enableFile ? args[1] : args[0];
       if (requiresAuth) {
+        const { default: authOptions } = await import("@lib/auth");
         const session = (await getServerSession(authOptions)) as null | AppSession;
         if (!session?.appUser) {
           const err = new LoggedOutErrorMessage();
           throw err;
         }
         // @ts-expect-error checked
-        ctx.user = session;
+        ctx.user = session.appUser;
       }
       const result = requiresPayload ? await execute(ctx, payload) : await (execute as (context: Context) => Promise<ReturnType<Executor>>)(ctx);
       return {
@@ -159,6 +160,7 @@ export const subscribeRequestHandler = (<
         data: result as Awaited<ReturnType<Executor>>,
       };
     } catch (error) {
+      console.error(error);
       return onError?.(error) ?? {
         success: false,
         reason: `${error}`,
@@ -252,7 +254,14 @@ export const setupPostHandler = (<
 ): ((req: NextRequest) => Promise<Response>) => {
   return async function POST (req: NextRequest): Promise<Response> {
     if (entry.requiresPayload) {
-      const payload = await req.json() as InferPayload<E["call"]>;
+      const payload = await (async () => {
+        try {
+          const p = await req.json();
+          return p;
+        } catch {
+          return {};
+        }
+      })() as InferPayload<E["call"]>;
       // @ts-expect-error checked by caller.length
       const res = await entry.call(payload);
       return new Response(JSON.stringify(res), { status: successCode });
@@ -282,7 +291,7 @@ export const setupPostWithFileHandler = (<
     const file = formData.get(FORM_DATA_FILE_KEY) as File | null;
     if (entry.requiresPayload) {
       const payloadRaw = formData.get(FORM_DATA_PAYLOAD_KEY);
-      const payload = JSON.stringify(payloadRaw) as InferPayload<E["call"]>;
+      const payload = JSON.stringify(payloadRaw) as unknown as Slice1<Parameters<E["call"]>>;
       // @ts-expect-error checked by caller.length
       const res = await entry.call(file, payload);
       return new Response(JSON.stringify(res), { status: successCode });

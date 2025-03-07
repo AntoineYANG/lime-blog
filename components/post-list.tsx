@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { FC } from "react";
 
-import type { IListPostResult } from "@lib/actions/posts";
+import type { ListPostResult } from "@actions/post";
 
 
 export interface IPostListProps {
-  items: IListPostResult['items'];
+  items: ListPostResult['items'];
 }
 
 const PostList: FC<IPostListProps> = ({ items }) => {

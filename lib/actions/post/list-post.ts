@@ -65,7 +65,7 @@ const listPost = subscribeRequestHandler({
 
     await ensurePostTable(db);
     
-    const [{ count: total }] = await db.select({ count: count() }).from(posts).where(where);
+    let [{ count: total }] = await db.select({ count: count() }).from(posts).where(where);
 
     const list = await db.query.posts.findMany({
       where,
@@ -82,7 +82,7 @@ const listPost = subscribeRequestHandler({
           const err = new ObjectNoReferenceErrorMessage(`Fetch object failed: url is invalid (post id: ${item.id}`);
           throw err;
         }
-        const object = await fetch(url);
+        const object = await fetch(new URL(url, process.env.DEPLOY_HOST));
         if (!object.ok) {
           const err = new ObjectNotFoundErrorMessage(`Fetch object failed: ${object.status} - ${object.statusText}`);
           throw err;
@@ -95,7 +95,8 @@ const listPost = subscribeRequestHandler({
           preview: preview.length > PREVIEW_LEN ? preview.slice(0, PREVIEW_LEN) + '...' : preview,
         });
       } catch (error) {
-        console.error(`Failed to load post id=${item.id}`, error);
+        console.error(`Failed to load post id=${item.id}`, error, item);
+        total -= 1;
       }
     }
 

@@ -4,7 +4,6 @@ import { type FC, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Button from "@cp/button.client";
-import postActions from "@lib/actions/posts";
 
 
 const NewPostPage: FC = () => {
@@ -13,10 +12,9 @@ const NewPostPage: FC = () => {
   const router = useRouter();
 
   const handleSubmit = async () => {
-    const res = await postActions.upload({
-      title,
-      content,
-    }, window.location.toString());
+    const url = new URL("/api/post/new", window.location.href);
+    const r = await fetch(url, { method: "post", body: JSON.stringify({ title, content }) });
+    const res = await r.json();
     if (res.success === false) {
       alert(res.reason);
     } else {
@@ -34,7 +32,7 @@ const NewPostPage: FC = () => {
             <input type="text" className="flex-1" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div className="flex-none w-full flex items-baseline justify-items-start space-x-2">
-            <textarea className="flex-none w-full min-h-[60vh] h-full px-4 py-6 resize-none" placeholder="内容" value={content} onChange={(e) => setContent(e.target.value)} required />
+            <textarea className="flex-none w-full min-h-[60vh] h-full px-4 py-6 resize-none" value={content} onChange={(e) => setContent(e.target.value)} required />
           </div>
           <div className="flex-none w-full flex items-baseline justify-items-center space-x-2">
             <Button onTrigger={handleSubmit} disabled={!title}>Submit</Button>

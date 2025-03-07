@@ -15,7 +15,7 @@
     "@next/mdx": "^15.2.1",
     "@vercel/analytics": "^1.5.0",
     "@vercel/blob": "^0.27.2",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "cookies": "^0.9.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.0",
@@ -25,18 +25,15 @@
     "nanoid": "^5.1.2",
     "next": "15.2.1",
     "next-auth": "^4.24.11",
-    "next-mdx-remote": "^5.0.0",
     "pg": "^8.13.3",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-wrap-balancer": "^1.1.1",
-    "sqlite3": "^5.1.7"
+    "react-wrap-balancer": "^1.1.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/bcrypt": "^5.0.2",
     "@types/cookies": "^0.9.0",
     "@types/fs-extra": "^11.0.4",
     "@types/jsonwebtoken": "^9.0.9",

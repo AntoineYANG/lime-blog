@@ -1,12 +1,10 @@
-// import Link from "next/link";
-
-import PostList from "@/components/post-list";
-import postActions from "@lib/actions/posts";
+import PostList from "@cp/post-list";
+import Post from "@actions/post";
 
 
 export default async function Home() {
   try {
-    const data = await postActions.fetchPostList({});
+    const data = await Post.listPost.call();
   
     return (
       <div>

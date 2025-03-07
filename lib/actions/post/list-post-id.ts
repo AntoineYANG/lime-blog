@@ -10,7 +10,7 @@ const listPostId = subscribeRequestHandler({
   method: "GET",
   endpoint: "/post/all-id",
   name: "listPostId",
-  async execute(): Promise<ListPostIdResult> {
+  async execute(_): Promise<ListPostIdResult> {
     const where = and(
       isNull(posts.deletedAt),
       isNotNull(posts.url),

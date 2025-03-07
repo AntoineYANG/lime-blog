@@ -3,13 +3,13 @@
 import { useEffect, useState, type FC } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import type { IListPostPayload, IListPostResult } from "@lib/actions/posts";
+import type { ListPostSearchParams, ListPostResult } from "@actions/post";
 import PostSearchView from "@cp/post-search-view.client";
 
 
 export const dynamic = 'force-dynamic';
 
-const SearchResultBody: FC<{ initPayload: IListPostPayload; initResult: IResult<IListPostResult> }> = ({ initPayload, initResult }) => {
+const SearchResultBody: FC<{ initSearch: ListPostSearchParams; initResult: IResult<ListPostResult> }> = ({ initSearch: initPayload, initResult }) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
