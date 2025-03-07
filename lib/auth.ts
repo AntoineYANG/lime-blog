@@ -3,10 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 // import GithubProvider from "next-auth/providers/github";
 
-import { db, sqlite } from "@/lib/drizzle";
+import { db } from "@lib/drizzle";
 import { LOCAL_LOGIN_ID } from "./constants";
 import { BadUsrStatusErrorMessage, raiseErrorMessage, WrongUsrNameOrPwdErrorMessage } from "./errors";
-import userActions from "./actions/users";
+import User from "./actions/user";
 
 
 const authOptions: AuthOptions = {
@@ -26,17 +26,16 @@ const authOptions: AuthOptions = {
         if (!credentials) {
           throw new Error("Authorization failed: invalid credential.");
         }
-        await sqlite.users.init(db);
         const user = await db.query.users.findFirst({
           where: (u, op) => op.and(
-            op.isNull(u.deleted_at),
+            op.isNull(u.deletedAt),
             op.eq(u.email, credentials.email),
           ),
         });
         if (!user) {
           throw raiseErrorMessage(new WrongUsrNameOrPwdErrorMessage());
         }
-        if (user.deleted_at) {
+        if (user.deletedAt) {
           throw raiseErrorMessage(new BadUsrStatusErrorMessage('User has been deleted.'));
         }
         const isValid = await bcrypt.compare(credentials.password, user.password);
@@ -71,9 +70,14 @@ const authOptions: AuthOptions = {
       const username = session.user?.name;
       if (username) {
         try {
-          const user = await userActions.getUser({ name: username });
-          if (user.success) {
-            session.appUser = user.data;
+          const res = await User.findUser({ name: username });
+          if (res.success && res.data) {
+            const { id, name, role } = res.data;
+            session.appUser = {
+              id,
+              username: name,
+              role,
+            };
           }
         } catch (error) {
           console.error("Error occurred in session callback", error);

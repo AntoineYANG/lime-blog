@@ -40,5 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 
 # data
-/database
-/objects
+/public/objects

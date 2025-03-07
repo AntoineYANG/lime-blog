@@ -4,13 +4,14 @@ import { subscribeRequestHandler } from "@lib/utils";
 import { BadPayloadErrorMessage, raiseErrorMessage } from "@lib/errors";
 import { db } from "@lib/drizzle";
 import { ensureUserTable, users } from "@models/user";
-import type { FindUserPayload, FindUserRespond } from "./types";
+import type { FindUserPayload, FindUserResult } from "./types";
 
 
 const findUser = subscribeRequestHandler({
+  method: "GET",
   endpoint: "/user",
   name: "findUser",
-  async execute(payload: FindUserPayload): Promise<FindUserRespond | null> {
+  async execute(_, payload: FindUserPayload): Promise<FindUserResult | null> {
     let where: SQL<unknown>;
     
     const { id, name, email } = payload;
@@ -36,6 +37,7 @@ const findUser = subscribeRequestHandler({
     
     return {
       id: value.id,
+      role: value.role,
       name: value.username,
       email: value.email,
       avatar: value.avatar,

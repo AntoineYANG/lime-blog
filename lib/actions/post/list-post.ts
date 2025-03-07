@@ -4,10 +4,11 @@ import { withKeysMapped } from "@utils/types";
 import { extractContent } from "@utils/mdx";
 import { subscribeRequestHandler } from "@lib/utils";
 import { OrderDirection } from "@lib/constants";
+import { ObjectNoReferenceErrorMessage, ObjectNotFoundErrorMessage } from "@lib/errors";
 import { db } from "@lib/drizzle";
 import type { OrderByKey } from "@lib/types";
 import { ensurePostTable, posts } from "@models/post";
-import type { IPostWithPreview, ListPostPayload, ListPostPayloadCompatible, ListPostRespond } from "./types";
+import type { IPostWithPreview, ListPostPayload, ListPostPayloadCompatible, ListPostResult } from "./types";
 
 
 const normalizeListPostPayload = (raw: ListPostPayloadCompatible): ListPostPayload => {
@@ -32,9 +33,10 @@ const MAX_PAGE_SIZE = 200;
 const PREVIEW_LEN = 300;
 
 const listPost = subscribeRequestHandler({
+  method: "GET",
   endpoint: "/post/all",
   name: "listPost",
-  async execute(payloadRaw: ListPostPayloadCompatible): Promise<ListPostRespond> {
+  async execute(_, payloadRaw: ListPostPayloadCompatible): Promise<ListPostResult> {
     const payload = normalizeListPostPayload(payloadRaw);
 
     const {
@@ -75,13 +77,15 @@ const listPost = subscribeRequestHandler({
     const listWithPreview: IPostWithPreview[] = [];
     for await (const item of list) {
       const { deletedAt: _, url, ...d } = item;
-      if (!url) {
-        continue;
-      }
       try {
+        if (!url) {
+          const err = new ObjectNoReferenceErrorMessage(`Fetch object failed: url is invalid (post id: ${item.id}`);
+          throw err;
+        }
         const object = await fetch(url);
         if (!object.ok) {
-          throw new Error(`Fetch object failed: ${object.status} - ${object.statusText}`);
+          const err = new ObjectNotFoundErrorMessage(`Fetch object failed: ${object.status} - ${object.statusText}`);
+          throw err;
         }
         const raw = await object.text();
         const preview = await extractContent(raw);

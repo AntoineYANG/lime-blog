@@ -1,67 +1,159 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import bcrypt from "bcrypt";
 import type { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
 import type { PgTableWithColumns, TableConfig } from "drizzle-orm/pg-core";
 import { Column } from "drizzle-orm";
 
+import authOptions from "./auth";
+import { LoggedOutErrorMessage } from "./errors";
 import type { db as _db } from "./drizzle";
 
 
 declare global {
 
-  type RequestExecutor<Payload extends Record<string, unknown> | unknown, Respond> = Payload extends Record<string, undefined> ? {
-    (payload: Payload): Promise<IResult<Respond>>;
-  } : {
-    (): Promise<IResult<Respond>>;
-  };
-
-  type RequestHandler<Payload extends Record<string, unknown> | unknown, Respond> = Payload extends Record<string, undefined> ? {
-    (payload: Payload): Promise<IResult<Respond>>;
-  } : {
-    (): Promise<IResult<Respond>>;
-  };
-
   type RequestEntry<
+    Method extends HttpMethod,
     Endpoint extends string,
     HandlerName extends string,
     RequiresPayload extends boolean,
+    RequiresAuth extends boolean,
+    EnableFile extends boolean,
     Payload extends Record<string, unknown> | unknown,
-    Respond
+    Result
   > = {
+    readonly method: Method,
     readonly endpoint: Endpoint;
     readonly name: HandlerName;
-    readonly handler: RequestHandler<Payload, Respond>;
+    readonly call: (...args: RequestActionParameters<EnableFile, Payload>) => RequestActionReturn<Result>;
     readonly requiresPayload: RequiresPayload;
+    readonly requiresAuth: RequiresAuth;
+    readonly enableFile: EnableFile;
+    (...args: RequestActionParameters<EnableFile, Payload>): RequestActionReturn<Result>;
   };
 
 }
 
 
-type InferRequiresPayload<C extends (payload?: any) => any> = C extends (payload: unknown) => Promise<unknown> ? false : true;
-type InferPayload<C extends (payload?: any) => any> = C extends (payload: infer P) => Promise<unknown> ? P : unknown;
+type InferRequiresPayload<C extends (ctx: any, payload?: any) => any> = C extends (ctx: any, payload: unknown) => Promise<unknown> ? false : true;
+type InferPayload<C extends (ctx: any, payload?: any) => any> = C extends (ctx: any, payload: infer P) => Promise<unknown> ? P : never;
 type InferRespond<C extends (payload?: any) => any> = ReturnType<C>;
 
-export type RequestHandlerConfig<
+type RequestActionParameters<
+  EnableFile extends boolean,
+  Payload extends Record<string, unknown> | unknown,
+> = EnableFile extends true ? (
+  unknown extends Payload ? [file: File | null] : [file: File | null, payload: Payload]
+) : (
+  unknown extends Payload ? [] : [payload: Payload]
+);
+
+type RequestActionReturn<Result> = Promise<IResult<Awaited<Result>>>;
+
+export interface RequestHandlerConfig<
+  Method extends HttpMethod,
   Endpoint extends string,
   HandlerName extends string,
-  Executor extends (payload?: any) => any,
-> = {
+  RequiresAuth extends boolean,
+  EnableFile extends boolean,
+  Context extends (
+    & (RequiresAuth extends true ? { user: SessionUser } : {})
+    & (EnableFile extends true ? { file: File | null } : {})
+  ),
+  Executor extends (context: Context, payload?: Record<string, any>) => any
+> {
+  method: Method;
   endpoint: Endpoint;
   name: HandlerName;
+  /** @default false */
+  requiresAuth?: RequiresAuth;
+  /** @default false */
+  enableFile?: EnableFile;
   execute: Executor;
   onError?: (error: unknown) => (IResult<Awaited<ReturnType<Executor>>> | undefined | null | void);
-};
+}
+
+interface SubscribeRequestHandler {
+
+  // requiresAuth=false, enableFile=false
+  <
+    Method extends HttpMethod,
+    Endpoint extends string,
+    HandlerName extends string,
+    Context extends {},
+    Executor extends (context: Context, payload?: any) => unknown
+  >(config: RequestHandlerConfig<Method, Endpoint, HandlerName, false, false, Context, Executor>): (
+    RequestEntry<Method, Endpoint, HandlerName, InferRequiresPayload<Executor>, false, false, InferPayload<Executor>, InferRespond<Executor>>
+  );
+
+  // requiresAuth=false, enableFile=true
+  <
+    Method extends HttpMethod,
+    Endpoint extends string,
+    HandlerName extends string,
+    Context extends { file: File | null },
+    Executor extends (context: Context, payload?: any) => unknown
+  >(config: RequestHandlerConfig<Method, Endpoint, HandlerName, false, true, Context, Executor>): (
+    RequestEntry<Method, Endpoint, HandlerName, InferRequiresPayload<Executor>, false, true, InferPayload<Executor>, InferRespond<Executor>>
+  );
+
+  // requiresAuth=true, enableFile=false
+  <
+    Method extends HttpMethod,
+    Endpoint extends string,
+    HandlerName extends string,
+    Context extends { user: SessionUser },
+    Executor extends (context: Context, payload?: any) => unknown
+  >(config: RequestHandlerConfig<Method, Endpoint, HandlerName, true, false, Context, Executor>): (
+    RequestEntry<Method, Endpoint, HandlerName, InferRequiresPayload<Executor>, false, false, InferPayload<Executor>, InferRespond<Executor>>
+  );
+
+  // requiresAuth=true, enableFile=true
+  <
+    Method extends HttpMethod,
+    Endpoint extends string,
+    HandlerName extends string,
+    Context extends { user: SessionUser; file: File | null },
+    Executor extends (context: Context, payload?: any) => unknown
+  >(config: RequestHandlerConfig<Method, Endpoint, HandlerName, true, true, Context, Executor>): (
+    RequestEntry<Method, Endpoint, HandlerName, InferRequiresPayload<Executor>, true, true, InferPayload<Executor>, InferRespond<Executor>>
+  );
+
+}
 
 export const subscribeRequestHandler = (<
+  Method extends HttpMethod,
   Endpoint extends string,
   HandlerName extends string,
-  Executor extends (payload?: any) => unknown,
->(config: RequestHandlerConfig<Endpoint, HandlerName, Executor>) => {
-  const { endpoint, name, execute, onError } = config;
-  const requiresPayload = execute.length !== 0;
-  const handler = (async (...args: Parameters<Executor>): Promise<IResult<Awaited<ReturnType<Executor>>>> => {
+  RequiresAuth extends boolean,
+  EnableFile extends boolean,
+  Context extends (
+    & (RequiresAuth extends true ? { user: SessionUser } : {})
+    & (EnableFile extends true ? { file: File | null } : {})
+  ),
+  Executor extends (context: Context, payload?: any) => unknown
+>(config: RequestHandlerConfig<Method, Endpoint, HandlerName, RequiresAuth, EnableFile, Context, Executor>) => {
+  const { method, endpoint, name, requiresAuth = false, enableFile = false, execute, onError } = config;
+  const requiresPayload = execute.length === 2;
+  const call = async (...args: [Parameters<Executor>[1], Parameters<Executor>[2]]): Promise<IResult<Awaited<ReturnType<Executor>>>> => {
     try {
-      const result = requiresPayload ? await execute(args[0]) : await execute();
+      const ctx = {} as Context;
+      if (enableFile) {
+        // @ts-expect-error checked
+        ctx.file = args[0] ?? null;
+      }
+      const payload = enableFile ? args[1] : args[0];
+      if (requiresAuth) {
+        const session = (await getServerSession(authOptions)) as null | AppSession;
+        if (!session?.appUser) {
+          const err = new LoggedOutErrorMessage();
+          throw err;
+        }
+        // @ts-expect-error checked
+        ctx.user = session;
+      }
+      const result = requiresPayload ? await execute(ctx, payload) : await (execute as (context: Context) => Promise<ReturnType<Executor>>)(ctx);
       return {
         success: true,
         data: result as Awaited<ReturnType<Executor>>,
@@ -72,14 +164,20 @@ export const subscribeRequestHandler = (<
         reason: `${error}`,
       };
     }
-  }) as RequestHandler<InferPayload<Executor>, InferRespond<Executor>>;
-  return {
+  };
+  const handler = {
+    method,
     endpoint,
     name,
-    handler,
+    call,
     requiresPayload,
-  } as RequestEntry<Endpoint, HandlerName, InferRequiresPayload<Executor>, InferPayload<Executor>, InferRespond<Executor>>;
-});
+  };
+  return new Proxy(handler, {
+    apply(target, _thisArg: undefined, args: Parameters<typeof call>): ReturnType<typeof call> {
+      return target.call(...args);
+    },
+  });
+}) as SubscribeRequestHandler;
 
 type InferParamResolver<P extends Record<string, any>> = {
   [key in keyof P as string extends NonNullable<P[key]> ? never : key]-?: (raw: string | undefined) => P[key];
@@ -87,16 +185,16 @@ type InferParamResolver<P extends Record<string, any>> = {
   [key in keyof P as string extends NonNullable<P[key]> ? key : never]: (raw: string | undefined) => P[key];
 }>;
 
-type PayloadOfEntry<E extends RequestEntry<string, string, true, any, any>> = E extends RequestEntry<string, string, true, infer P, any> ? P : never;
+type PayloadOfEntry<E extends RequestEntry<HttpMethod, string, string, true, boolean, boolean, any, any>> = E extends RequestEntry<HttpMethod, string, string, true, boolean, boolean, infer P, any> ? P : never;
 
 interface SetupGetHandler {
 
-  <E extends RequestEntry<string, string, true, any, any>, P extends PayloadOfEntry<E>, R extends InferParamResolver<P>>(
+  <E extends RequestEntry<"GET", string, string, true, boolean, false, any, any>, P extends PayloadOfEntry<E>, R extends InferParamResolver<P>>(
     entry: E,
     ...[paramResolver]: Record<string, never> extends R ? [R?] : [R]
   ): ((req: NextRequest) => Promise<Response>);
 
-  <E extends RequestEntry<string, string, false, any, any>>(
+  <E extends RequestEntry<"GET", string, string, false, boolean, false, any, any>>(
     entry: E
   ): ((req: NextRequest) => Promise<Response>);
 
@@ -104,7 +202,7 @@ interface SetupGetHandler {
 
 export const setupGetHandler = (<
   RequiresPayload extends boolean,
-  E extends RequestEntry<string, string, RequiresPayload, Record<string, unknown> | unknown, unknown>
+  E extends RequestEntry<"GET", string, string, RequiresPayload, boolean, false, Record<string, unknown> | unknown, unknown>
 >(
   entry: E,
   paramResolver?: InferParamResolver<E> | undefined,
@@ -113,10 +211,10 @@ export const setupGetHandler = (<
     if (entry.requiresPayload) {
       const pr = paramResolver as NonNullable<typeof paramResolver> | undefined;
       const searchParams = req.nextUrl.searchParams;
-      const payload = {} as { [key in keyof InferPayload<E["handler"]>]: InferPayload<E["handler"]>[key] };
+      const payload = {} as { [key in keyof InferPayload<E["call"]>]: InferPayload<E["call"]>[key] };
       for (const [k, v] of searchParams.entries()) {
         if (typeof v === "string" && !pr?.[k as keyof typeof pr]) {
-        // @ts-expect-error checked
+          // @ts-expect-error checked
           payload[k] = v;
         }
       }
@@ -126,19 +224,73 @@ export const setupGetHandler = (<
           if (!raw) {
             continue;
           }
-          const k = key as keyof InferPayload<E["handler"]>;
+          const k = key as keyof InferPayload<E["call"]>;
           // @ts-expect-error checked
           payload[k] = pr[k](raw);
         }
       }
       // @ts-expect-error checked by caller.length
-      const res = await entry.handler(payload);
+      const res = await entry.call(payload);
       return new Response(JSON.stringify(res), { status: 200 });
     }
-    const res = await entry.handler();
+    const res = await entry.call();
     return new Response(JSON.stringify(res), { status: 200 });
   }
 }) as SetupGetHandler;
+
+type SetupPostHandler = <E extends RequestEntry<"POST", string, string, boolean, boolean, false, any, any>>(
+  entry: E,
+  /** @default 200 */
+  successCode?: 200 | 201 | 202 | 203
+) => ((req: NextRequest) => Promise<Response>);
+
+export const setupPostHandler = (<
+  E extends RequestEntry<"POST", string, string, boolean, boolean, false, Record<string, unknown> | unknown, unknown>
+>(
+  entry: E,
+  successCode: 200 | 201 | 202 | 203 = 200
+): ((req: NextRequest) => Promise<Response>) => {
+  return async function POST (req: NextRequest): Promise<Response> {
+    if (entry.requiresPayload) {
+      const payload = await req.json() as InferPayload<E["call"]>;
+      // @ts-expect-error checked by caller.length
+      const res = await entry.call(payload);
+      return new Response(JSON.stringify(res), { status: successCode });
+    }
+    const res = await entry.call();
+    return new Response(JSON.stringify(res), { status: successCode });
+  }
+}) as SetupPostHandler;
+
+export const FORM_DATA_PAYLOAD_KEY = "metadata";
+export const FORM_DATA_FILE_KEY = "file";
+
+type SetupPostWithFileHandler = <E extends RequestEntry<"POST", string, string, boolean, boolean, true, any, any>>(
+  entry: E,
+  /** @default 201 */
+  successCode?: 200 | 201 | 202 | 203
+) => ((req: NextRequest) => Promise<Response>);
+
+export const setupPostWithFileHandler = (<
+  E extends RequestEntry<"POST", string, string, boolean, boolean, true, Record<string, unknown> | unknown, unknown>
+>(
+  entry: E,
+  successCode: 200 | 201 | 202 | 203 = 201
+): ((req: NextRequest) => Promise<Response>) => {
+  return async function POST (req: NextRequest): Promise<Response> {
+    const formData = await req.formData();
+    const file = formData.get(FORM_DATA_FILE_KEY) as File | null;
+    if (entry.requiresPayload) {
+      const payloadRaw = formData.get(FORM_DATA_PAYLOAD_KEY);
+      const payload = JSON.stringify(payloadRaw) as InferPayload<E["call"]>;
+      // @ts-expect-error checked by caller.length
+      const res = await entry.call(file, payload);
+      return new Response(JSON.stringify(res), { status: successCode });
+    }
+    const res = await entry.call(file);
+    return new Response(JSON.stringify(res), { status: successCode });
+  }
+}) as SetupPostWithFileHandler;
 
 export const resolveCreateTableSQL = <TableName extends string, T extends TableConfig & { name: TableName }>(
   tableName: TableName,

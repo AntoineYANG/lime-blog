@@ -33,7 +33,7 @@ export interface IPostWithPreview extends IPost {
   preview: string;
 }
 
-export interface ListPostRespond {
+export interface ListPostResult {
   items: IPostWithPreview[];
   count: number;
   /** page index (beginning from 1) */
@@ -41,7 +41,16 @@ export interface ListPostRespond {
   pageSize: number;
 }
 
-// export interface ListPostIdResult {
-//   items: string[];
-//   count: number;
-// }
+export interface ListPostIdResult {
+  items: string[];
+  count: number;
+}
+
+export interface NewPostPayload {
+  title: string;
+  content: string;
+}
+
+export interface NewPostResult {
+  id: string;
+}

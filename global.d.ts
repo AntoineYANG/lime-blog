@@ -31,9 +31,14 @@ declare global {
       readonly POSTGRES_DATABASE?: string;
       readonly POSTGRES_URL_NO_SSL?: string;
       readonly POSTGRES_PRISMA_URL?: string;
+
+      readonly USE_LOCAL_OBJECT_STORAGE?: "true";
+      readonly VERCEL_BLOB_READ_WRITE_TOKEN?: string;
     }
 
   }
+
+  type HttpMethod = "GET" | "POST" | "PUT";
   
   type IResult<T> = {
     success: true;
@@ -44,9 +49,11 @@ declare global {
     detail?: string;
   };
 
+  type SessionUser = Pick<IUser, "id" | "username" | "role">;
+
   type AppSession = Session & {
     accessToken?: unknown;
-    appUser?: IUser | undefined | null;
+    appUser?: SessionUser | undefined | null;
   };
 
   type WithKeysMapped<T extends object, M extends Partial<{ [key in keyof T]: Exclude<string, keyof T> }>> = {
