@@ -11,8 +11,8 @@ import { extractContent } from "@utils/mdx";
 
 
 const orderKeyMap: { [key in typeof validOrderByKey[number]]: keyof Data.Post } = {
-  "created time": "created_at",
-  "updated time": "updated_at",
+  "created time": "createdAt",
+  "updated time": "updatedAt",
 };
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
   const payload = resolveListPostPayload(req.nextUrl.searchParams);
 
   const where = and(
-    isNull(posts.deleted_at),
+    isNull(posts.deletedAt),
     payload.authorId ? eq(posts.authorId, payload.authorId) : undefined,
     payload.updatedTimeNotEarlierThan !== undefined || payload.updatedTimeNotLaterThan !== undefined ? between(
-      posts.updated_at, payload.updatedTimeNotEarlierThan ?? 0, payload.updatedTimeNotLaterThan ?? Math.ceil(Date.now() / 1_000) + 1
+      posts.updatedAt, payload.updatedTimeNotEarlierThan ?? 0, payload.updatedTimeNotLaterThan ?? Math.ceil(Date.now() / 1_000) + 1
     ) : undefined,
   );
 
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   const listWithPreview: (IPost & { preview: string })[] = [];
   for await (const item of list) {
-    const { deleted_at: _, ...d } = item;
+    const { deletedAt: _, ...d } = item;
     const fn = path.join(postDir, `${item.id}.md`);
     try {
       const raw = await readFile(fn, 'utf8');

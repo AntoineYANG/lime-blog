@@ -8,6 +8,9 @@ export enum ErrorCode {
   BAD_USR_STATUS = 2002,
   // api endpoint
   BAD_PAYLOAD = 3001,
+  // object storage
+  OBJECT_NO_REFERENCE = 4001,
+  OBJECT_NOT_FOUND = 4002,
 }
 
 abstract class ErrorMessage {
@@ -51,6 +54,20 @@ export class BadPayloadErrorMessage extends ErrorMessage {
   constructor(details: string) {
     super(ErrorCode.BAD_PAYLOAD, "BAD_PAYLOAD");
     this.details = details;
+  }
+}
+
+export class ObjectNoReferenceErrorMessage extends ErrorMessage {
+  override readonly details?: void;
+  constructor() {
+    super(ErrorCode.OBJECT_NO_REFERENCE, "OBJECT_NO_REFERENCE");
+  }
+}
+
+export class ObjectNotFoundErrorMessage extends ErrorMessage {
+  override readonly details?: void;
+  constructor() {
+    super(ErrorCode.OBJECT_NOT_FOUND, "OBJECT_NOT_FOUND");
   }
 }
 

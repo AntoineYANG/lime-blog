@@ -57,8 +57,8 @@ export async function POST(req: Request) {
     id,
     authorId: session.appUser.id,
     title,
-    created_at: timestamp,
-    updated_at: timestamp,
+    createdAt: timestamp,
+    updatedAt: timestamp,
   });
 
   const data: IResult<IUploadPostResult> = {

@@ -1,30 +1,41 @@
 import { integer, pgTable, text } from "drizzle-orm/pg-core";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
+import type { Database } from "@lib/types";
+import { ensureTableFunction, resolveCreateTableSQL } from "@lib/utils";
+
 
 declare global {
   namespace Data {
     interface Post {
       id: string;
+      url: string;
       authorId: string;
       title: string;
-      created_at: number;
-      updated_at: number;
-      deleted_at?: number;
+      createdAt: number;
+      updatedAt: number;
+      deletedAt?: number;
     }
   }
 }
 
 export const posts = pgTable("posts", {
   id: text("id").primaryKey(),
-  authorId: text("authorId").notNull(),
+  url: text("url"),
+  authorId: text("author_id").notNull(),
   title: text("title").notNull(),
-  created_at: integer("created_at").notNull().default(Math.floor(Date.now() / 1_000)), // Unix stamp
-  updated_at: integer("updated_at").notNull().default(Math.floor(Date.now() / 1_000)), // Unix stamp
-  deleted_at: integer("deleted_at"), // Unix stamp
+  createdAt: integer("created_at").notNull().default(Math.floor(Date.now() / 1_000)), // Unix stamp
+  updatedAt: integer("updated_at").notNull().default(Math.floor(Date.now() / 1_000)), // Unix stamp
+  deletedAt: integer("deleted_at"), // Unix stamp
 });
 
 export type Post = InferSelectModel<typeof posts>;
 export type NewPost = InferInsertModel<typeof posts>;
 
-export type IPost = Omit<Data.Post, "deleted_at">;
+export type IPost = Omit<Data.Post, "deletedAt">;
+
+export const ensurePostTable = ensureTableFunction(async (db: Database<typeof posts>) => {
+  await db.execute(resolveCreateTableSQL("posts", posts, {
+    createdAt: "NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()))",
+  }));
+});

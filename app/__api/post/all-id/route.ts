@@ -8,7 +8,7 @@ import { posts } from "@models/post";
 export async function GET() {
   await sqlite.posts.init(db);
 
-  const list = await db.select({ id: posts.id }).from(posts).where(isNotNull(posts.deleted_at));
+  const list = await db.select({ id: posts.id }).from(posts).where(isNotNull(posts.deletedAt));
 
   const data: IResult<IListPostIdResult> = {
     success: true,

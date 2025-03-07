@@ -49,6 +49,17 @@ declare global {
     appUser?: IUser | undefined | null;
   };
 
+  type WithKeysMapped<T extends object, M extends Partial<{ [key in keyof T]: Exclude<string, keyof T> }>> = {
+    [key in M[keyof M]]: T[keyof PickByValue<M, key>];
+  } & {
+    [key in keyof Omit<T, keyof M>]: T[key];
+  };
+
 }
 
-export {}
+type PickByValue<T extends object, V extends T[keyof T]> = {
+  [K in keyof T as T[K] extends V ? K : never]: T[K];
+};
+
+
+export {};
