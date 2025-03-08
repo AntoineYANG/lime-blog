@@ -5,15 +5,16 @@ import Link from "next/link";
 import type { FC } from "react";
 
 import { withSession } from "./with-session";
+import ArticleProgress from "./article-progress.client";
 
 
-const Separator: FC = () => <span className="select-none inline-block mx-1">|</span>;
+const Separator: FC = () => <span aria-hidden="true" role="separator" className="select-none inline-block mx-1">|</span>;
 
 const Navbar: FC = () => {
   const { data: session } = useSession();
   return (
-    <div className="fixed top-0 left-0 right-0 z-30">
-      <header className="flex-none bg-lime-100 w-full flex px-4 py-1">
+    <div className="fixed top-0 left-0 right-0 z-30 text-sm h-10 flex flex-col">
+      <header className="bg-lime-100 flex-1 text-gray-800 w-full flex items-center px-4 py-1">
         <div className="flex-none">
           <Link href="/">
             home
@@ -41,6 +42,7 @@ const Navbar: FC = () => {
           )}
         </div>
       </header>
+      <ArticleProgress />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 
 import { font } from "@cp/theme";
 import Navbar from "@cp/navbar.client";
+import BackToTopButton from "@cp/back-to-top-button";
 
 import "./globals.css";
 
@@ -20,16 +21,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-style-none">
       <body
-        className={`${font.kleeOne.className} antialiased w-screen min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-scroll bg-background text-foreground scroll-style-none`}
+        className={`${font.kleeOne.className} bg-gray-50 text-gray-900 antialiased w-screen min-h-[calc(100vh-2.5rem)] overflow-x-hidden overflow-y-scroll scroll-style-none`}
       >
         <Navbar />
-        <div className="relative w-full h-full mt-16 mb-0 overflow-hidden py-0">
+        <div className="relative w-full h-full mt-[calc(2.5rem-2px)] mb-0 overflow-hidden py-0">
           <div className="w-full overflow-x-hidden" id="main">
             {children}
           </div>
           {/* <Footer /> */}
         </div>
-        {/* <BackToTopButton /> */}
+        <BackToTopButton />
         <Analytics />
       </body>
     </html>

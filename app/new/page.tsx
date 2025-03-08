@@ -4,6 +4,7 @@ import { type FC, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Button from "@cp/button.client";
+import { ErrorMessage } from "@/lib/errors";
 
 
 const NewPostPage: FC = () => {
@@ -16,7 +17,12 @@ const NewPostPage: FC = () => {
     const r = await fetch(url, { method: "post", body: JSON.stringify({ title, content }) });
     const res = await r.json();
     if (res.success === false) {
-      alert(res.reason);
+      console.log(res)
+      if (res.reason instanceof ErrorMessage) {
+        alert(`${(res.reason as ErrorMessage).label}. ${(res.reason as ErrorMessage).details}`);
+      } else {
+        alert(res.reason);
+      }
     } else {
       router.push(`/p/${res.data.id}`);
     }

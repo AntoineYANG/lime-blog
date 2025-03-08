@@ -1,3 +1,4 @@
+import type { FC, PropsWithChildren } from "react";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import type { MDXComponents } from "mdx/types";
@@ -5,16 +6,30 @@ import type { MDXComponents } from "mdx/types";
 import { font } from "@cp/theme";
 
 
+const LinkSelf: FC<PropsWithChildren> = ({ children }) => {
+  if (typeof children === "string") {
+    const slug = children.replaceAll(/\s+/g, "-");
+    return (
+      <Link className="relative" href={`#${slug}`}>
+        <div id={slug} className="pointer-events-none absolute w-px h-px left-1/2 top-0 -translate-y-[calc(2.5rem)]" />
+        {children}
+      </Link>
+    );
+  }
+  return children;
+};
+
 export const mdxComponents = {
   h1: () => null,
-  h2: ({ children }) => <h2 className={`${font.kleeOne.className} text-3xl font-semibold text-foreground my-10`}>{children}</h2>,
-  h3: ({ children }) => <h3 className={`${font.kleeOne.className} text-2xl font-medium text-gray-950 my-9`}>{children}</h3>,
-  h4: ({ children }) => <h3 className={`${font.kleeOne.className} text-xl font-medium text-gray-950 my-8`}>{children}</h3>,
-  h5: ({ children }) => <h3 className={`${font.kleeOne.className} text-lg font-medium text-gray-900 my-7`}>{children}</h3>,
-  h6: ({ children }) => <h3 className={`${font.kleeOne.className} text-base font-medium text-gray-900 my-6`}>{children}</h3>,
-  p: ({ children }) => <p className="text-base text-gray-800 leading-8 my-6">{children}</p>,
+  h2: ({ children }) => <h2 className={`${font.kleeOne.className} border-b border-dotted border-gray-400 text-2xl leading-9 md:text-3xl md:leading-10 font-bold text-gray-900 tracking-widest mt-16 mb-12`}><LinkSelf>{children}</LinkSelf></h2>,
+  h3: ({ children }) => <h3 className={`${font.kleeOne.className} border-b border-dotted border-gray-400 text-[1.33rem] leading-8 md:text-2xl md:leading-9 font-bold text-gray-900 tracking-widest mt-12 mb-8`}><LinkSelf>{children}</LinkSelf></h3>,
+  h4: ({ children }) => <h4 className={`${font.kleeOne.className} border-b border-dotted border-gray-400 text-xl leading-8 md:text-[1.33rem] md:leading-9 font-semibold text-gray-900 tracking-widest mt-10 mb-[calc(var(--spacing)*7.2)]`}><LinkSelf>{children}</LinkSelf></h4>,
+  h5: ({ children }) => <h5 className={`${font.kleeOne.className} border-b border-dotted border-gray-400 text-[1.15rem] leading-7 md:text-xl md:leading-8 font-semibold text-gray-900 tracking-widest mt-9 mb-[calc(var(--spacing)*6.6)]`}><LinkSelf>{children}</LinkSelf></h5>,
+  h6: ({ children }) => <h6 className={`${font.kleeOne.className} border-b border-dotted border-gray-400 text-[1.1rem] leading-7 md:text-[1.15rem] md:leading-8 font-semibold text-gray-900 mt-8 mb-6`}><LinkSelf>{children}</LinkSelf></h6>,
+  hr: () => <hr className="border-gray-400 border-dashed my-20" />,
+  p: ({ children }) => <p className="text-base text-gray-900 leading-7 my-5">{children}</p>,
   blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">
+    <blockquote className="bg-gray-500 border-l-4 border-red-400 pl-4 italic text-gray-600 mt-6">
       {children}
     </blockquote>
   ),
@@ -22,10 +37,10 @@ export const mdxComponents = {
   ol: ({ children }) => <ol className="list-decimal pl-6 text-gray-900 my-4">{children}</ol>,
   li: ({ children }) => <li className="mb-3">{children}</li>,
   code: ({ children }) => (
-    <code className="bg-gray-100 text-sm text-gray-800 px-1 py-0.5 rounded">{children}</code>
+    <code className="text-sm">{children}</code>
   ),
   pre: ({ children }) => (
-    <pre className="bg-gray-900 text-white p-4 rounded-md overflow-x-auto my-4">{children}</pre>
+    <pre className="bg-gray-900 text-gray-100 p-4 rounded-md overflow-x-auto my-4">{children}</pre>
   ),
   table: ({ children }) => (
     <table className="table-auto w-full border-collapse border border-gray-300">{children}</table>

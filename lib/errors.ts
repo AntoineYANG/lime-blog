@@ -14,7 +14,7 @@ export enum ErrorCode {
   OBJECT_NOT_FOUND = 4002,
 }
 
-abstract class ErrorMessage {
+export abstract class ErrorMessage {
   readonly code: ErrorCode;
   readonly label: string;
   readonly details?: any;
@@ -25,6 +25,10 @@ abstract class ErrorMessage {
     if (details !== undefined) {
       this.details = details;
     }
+  }
+
+  toString() {
+    return `${this.code} ${this.label}${this.details ? `: ${this.details}` : ''}.`;
   }
 }
 
